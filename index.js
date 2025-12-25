@@ -4,49 +4,34 @@ const jsonfile = require("jsonfile");
 const moment = require("moment");
 const random = require("random");
 
-// Change the working directory to where your local repository is located
-const git = simpleGit("C:\Users\ironp\OneDrive\Desktop\GitHub_Graph");
+const git = simpleGit("C:/Users/ironp/OneDrive/Desktop/GitHub_Graph");
 
-const makeCommit = (n) => {
+const makeCommit = async (n) => {
   if (n === 0) {
-    // Push changes to the remote repository
-    git.push(["-u", "origin", "master"], (err, result) => {
-      if (err) {
-        console.error("Error pushing to remote:", err);
-      } else {
-        console.log("Pushed changes to remote repository");
-      }
-    });
+    const branch = (await git.branch()).current;
+    await git.push("origin", branch, ["-u"]);
+    console.log("✅ All commits pushed successfully");
     return;
   }
 
   const x = random.int(0, 54);
   const y = random.int(0, 6);
+
   const DATE = moment()
-    .subtract(0, "y")
-    .add(1, "d")
+    .subtract(1, "y")
     .add(x, "w")
     .add(y, "d")
     .format();
 
-  const data = {
-    date: DATE,
-  };
-  console.log(DATE);
+  const data = { date: DATE };
+  console.log("Commit date:", DATE);
 
-  jsonfile.writeFile(FILE_PATH, data, () => {
-    git
-      .add([FILE_PATH])
-      .commit(DATE, { "--date": DATE })
-      .push(["-u", "origin", "origin"], (err, result) => {
-        if (err) {
-          console.error("Error pushing to remote:", err);
-        } else {
-          console.log("Pushed changes to remote repository");
-          makeCommit(--n);
-        }
-      });
-  });
+  await jsonfile.writeFile(FILE_PATH, data);
+
+  await git.add(FILE_PATH);
+  await git.commit(DATE, { "--date": DATE });
+
+  await makeCommit(n - 1);
 };
 
-makeCommit(120);
+makeCommit(120).catch(console.error);
